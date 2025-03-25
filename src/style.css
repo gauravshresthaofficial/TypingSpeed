@@ -1,0 +1,126 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Roboto", sans-serif;
+  background-color: #f5f5f5;
+  height: 100vh;
+  width: 100%;
+}
+
+#app {
+  place-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.quote-container {
+  position: relative;
+}
+
+.quote {
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: rgb(116, 116, 116);
+}
+
+.input {
+  outline: none;
+  border: none;
+  font-size: 1.2rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: transparent;
+  scrollbar-width: none;
+  resize: none;
+  color: transparent;
+}
+
+.timer {
+  width: 100%;
+  color: #823b00;
+}
+
+.result {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.reset {
+  padding: 10px 20px;
+  justify-self: right;
+  cursor: pointer;
+  background-color: #545454;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+.reset:hover {
+  background-color: #1e2123;
+}
+
+.word {
+  margin-right: 0.3rem;
+}
+
+.correct {
+  color: rgb(0, 224, 0);
+}
+
+.incorrect {
+  color: red;
+  text-decoration: underline;
+}
+
+.cursor {
+  width: 2px;
+  height: 1em;
+  background: black;
+  display: inline-block;
+  position: absolute;
+  pointer-events: none;
+}
+
+
+.shortcut, .creator {
+    position: absolute;
+    bottom: 3rem;
+    cursor: none;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: smaller;
+    color: #898989;
+}
+
+.shortcut span {
+    background-color: rgb(151, 151, 151);
+    padding: 2px 5px;
+    border-radius: 4px;
+    color: white;
+}
+
+.creator {
+    bottom: 1rem;
+}

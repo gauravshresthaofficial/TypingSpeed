@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Typing Speed</title>
+  <link rel="stylesheet" href="src/style.css">
+</head>
+
+<body>
+  <div id="app">
+    <div class="container">
+      <h1>Typing Speed Test</h1>
+      <p class="timer">0</p>
+      <div class="quote-container">
+        <p class="quote"></p>
+        <div class="cursor"></div>
+        <textarea class="input" resize=false></textarea>
+      </div>
+      <div class="result">
+        <p>Speed: <span class="speed"></span></p>
+        <p>Accuracy: <span class="accuracy"></span></p>
+        <button class="reset">Reset</button>
+      </div>
+      <p class="shortcut">Press <span>Tab</span> + <span>Enter</span> to reset</p>
+    </div>
+    <p class="creator">Gaurav Shrestha</p>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

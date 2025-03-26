@@ -58,6 +58,7 @@ h1 {
 .timer {
   width: 100%;
   color: #823b00;
+  font-size: 1.5rem;
 }
 
 .result {

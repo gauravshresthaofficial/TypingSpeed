@@ -49,9 +49,8 @@ h1 {
   top: 0;
   left: 0;
   width: 100%;
+  resize: vertical;
   background-color: transparent;
-  scrollbar-width: none;
-  resize: none;
   color: transparent;
 }
 
@@ -101,9 +100,10 @@ h1 {
   display: inline-block;
   position: absolute;
   pointer-events: none;
-  transition: left 0.2s ease, top 0.2s ease;
+  transition: transform 0.2s ease-out, opacity 0.2s ease;
+  will-change: transform;
+  transform-origin: left center;
 }
-
 
 .shortcut, .creator {
     position: absolute;

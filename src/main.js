@@ -1,210 +1,245 @@
-// "use strict";
+"use strict";
 
 import { quotes } from "./quotes.json";
 
-const typingTest = (() => {
-  // DOM Elements
-  const quoteElement = document.querySelector(".quote");
+const TypingTest = (() => {
+  // Constants
+  const MIN_QUOTE_LENGTH = 100;
+  const MAX_QUOTE_LENGTH = 250;
+  const WPM_CHARACTERS_PER_WORD = 5;
+  const CURSOR_HIDDEN_OPACITY = "0";
+  const CURSOR_VISIBLE_OPACITY = "1";
+  const RESULTS_HIDDEN_OPACITY = "0.1";
+  const RESULTS_VISIBLE_OPACITY = "1";
 
-  const inputElement = document.querySelector(".input");
-  const resetElement = document.querySelector(".reset");
-  const timerElement = document.querySelector(".timer");
-  const speedElement = document.querySelector(".speed");
-  const accuracyElement = document.querySelector(".accuracy");
-  const cursorElement = document.querySelector(".cursor");
+  // DOM Elements
+  const elements = {
+    quote: document.querySelector(".quote"),
+    input: document.querySelector(".input"),
+    reset: document.querySelector(".reset"),
+    timer: document.querySelector(".timer"),
+    speed: document.querySelector(".speed"),
+    accuracy: document.querySelector(".accuracy"),
+    cursor: document.querySelector(".cursor"),
+    speedContainer: document.querySelector(".speed").parentElement,
+    accuracyContainer: document.querySelector(".accuracy").parentElement,
+  };
 
   // State
-  let quote = "";
-  let isStarted = false;
-  let timerInterval = null;
+  const state = {
+    quote: "",
+    isStarted: false,
+    timerInterval: null,
+    lastKey: null,
+    startTime: null,
+  };
 
   // Helper Functions
-  const filterValidQuotes = () => {
+  const getValidQuotes = () => {
     return quotes.filter(
-      (quote) => quote.text.length >= 100 && quote.text.length <= 300
+      (quote) =>
+        quote.text.length >= MIN_QUOTE_LENGTH &&
+        quote.text.length <= MAX_QUOTE_LENGTH
     );
   };
 
-  const moveCursor = (index) => {
-    const characterSpans = quoteElement.querySelectorAll(".character");
+  const positionCursor = (index) => {
+    const characterSpans = elements.quote.querySelectorAll(".character");
 
-    // Hide cursor at the start and end
-    if (index === 0 || index >= characterSpans.length) {
-      cursorElement.style.opacity = "0";
-      return;
-    } else {
-      cursorElement.style.opacity = "1";
-    }
+    // Hide cursor at boundaries
+    const atBoundary = index === 0 || index >= characterSpans.length;
+    elements.cursor.style.opacity = atBoundary
+      ? CURSOR_HIDDEN_OPACITY
+      : CURSOR_VISIBLE_OPACITY;
 
-    const targetSpan = characterSpans[index] || quoteElement;
+    if (atBoundary) return;
+
+    const targetSpan = characterSpans[index];
     const { offsetLeft, offsetTop, offsetHeight } = targetSpan;
+    // console.log(targetSpan);
+    // console.log(offsetLeft, offsetTop, offsetHeight);
 
-    cursorElement.style.left = `${offsetLeft}px`;
-    cursorElement.style.top = `${offsetTop}px`;
-    cursorElement.style.height = `${offsetHeight}px`;
-  };
-
-  const createCharacterSpan = (character) => {
-    const characterSpan = document.createElement("span");
-    characterSpan.className = "character";
-    characterSpan.textContent = character;
-    return characterSpan;
+    Object.assign(elements.cursor.style, {
+      left: `${offsetLeft}px`,
+      top: `${offsetTop}px`,
+      height: `${offsetHeight}px`,
+    });
   };
 
   // Core Functions
-  const generateRandomQuote = () => {
-    quoteElement.innerHTML = "";
-    const validQuotes = filterValidQuotes();
+  const displayNewQuote = () => {
+    elements.quote.innerHTML = "";
+    const validQuotes = getValidQuotes();
 
-    if (validQuotes.length === 0) {
+    if (!validQuotes.length) {
       console.error("No valid quotes found");
       return;
     }
 
-    const randomIndex = Math.floor(Math.random() * validQuotes.length);
-    quote = validQuotes[randomIndex].text;
+    const randomQuote =
+      validQuotes[Math.floor(Math.random() * validQuotes.length)];
+    state.quote = randomQuote.text;
 
-    quote.split("").forEach((character) => {
-      quoteElement.appendChild(createCharacterSpan(character));
-    });
+    const quote = state.quote
+      .split("")
+      .map((char) => `<span class="character">${char}</span>`)
+      .join("");
+    elements.quote.innerHTML = quote;
+
+    // Adjust input height after setting new quote
+    adjustInputHeight();
   };
 
-  let lastKey = null; // Track last key
-
-  const handleKeyDown = (e) => {
+  const handleSpecialKeys = (e) => {
     if (e.key === "Tab" || e.key === "Enter") {
       e.preventDefault();
 
-      // Check if Tab is followed by Enter, reset automatically
-      if (lastKey === "Tab" && e.key === "Enter") {
-        reset();
+      // Reset on Tab+Enter combination
+      if (state.lastKey === "Tab" && e.key === "Enter") {
+        resetTest();
       }
-      lastKey = e.key;
+      state.lastKey = e.key;
     } else {
-      lastKey = null;
+      state.lastKey = null;
     }
   };
 
-  const updateCharacterStyles = (characterSpans, inputCharacters) => {
-    characterSpans.forEach((span, index) => {
-      const char = inputCharacters[index];
+  const updateCharacterStates = (inputChars) => {
+    const characterSpans = elements.quote.querySelectorAll(".character");
 
-      if (char == null) {
+    characterSpans.forEach((span, i) => {
+      const inputChar = inputChars[i];
+      const spanChar = span.textContent;
+
+      // Clear previous state if no input for this position
+      if (inputChar === undefined) {
         span.classList.remove("correct", "incorrect");
-      } else {
-        const isCorrect = char === span.textContent;
-        span.classList.toggle("correct", isCorrect);
-        span.classList.toggle("incorrect", !isCorrect);
+        return;
+      }
+
+      // Determine new state
+      const isCorrect = inputChar === spanChar;
+
+      // Only update if state changed
+      if (isCorrect && !span.classList.contains("correct")) {
+        span.classList.add("correct");
+        span.classList.remove("incorrect");
+      } else if (!isCorrect && !span.classList.contains("incorrect")) {
+        span.classList.add("incorrect");
+        span.classList.remove("correct");
       }
     });
   };
 
-  const calculateResults = (inputValue) => {
-    const inputWords = inputValue.split(" ");
-    const quoteWords = quote.split(" ");
+  const calculateMetrics = (inputValue) => {
+    const inputChars = inputValue.split("");
+    const quoteChars = state.quote.split("");
 
-    // Count correct words (case-insensitive, punctuation-sensitive)
-    const correctWords = quoteWords.reduce((count, word, index) => {
-      return count + (word === (inputWords[index] || "").trim() ? 1 : 0);
-    }, 0);
+    const correctChars = quoteChars.reduce(
+      (count, char, i) => count + (char === (inputChars[i] || "")),
+      0
+    );
 
-    const totalWords = quoteWords.length;
+    const accuracy = quoteChars.length
+      ? (correctChars / quoteChars.length) * 100
+      : 0;
 
-    // Calculate accuracy (ensure we don't divide by zero)
-    const accuracy = totalWords > 0 ? (correctWords / totalWords) * 100 : 0;
+    const elapsedSeconds = (Date.now() - state.startTime) / 1000;
+    const wpm = elapsedSeconds
+      ? correctChars / WPM_CHARACTERS_PER_WORD / (elapsedSeconds / 60)
+      : 0;
 
-    // Parse time safely (handle decimal seconds)
-    const timeText = timerElement.textContent.replace(/[^\d.]/g, "");
-    const timeInSeconds = parseFloat(timeText) || 0.1; // Prevent division by zero
-    const timeInMinutes = timeInSeconds / 60;
-
-    // Calculate WPM (standard is (correctChars/5)/minutes)
-    // Using correct words instead of characters for simplicity
-    const wpm = timeInMinutes > 0 ? correctWords / timeInMinutes : 0;
-
-    // Show results
-    speedElement.parentElement.style.opacity = "1";
-    accuracyElement.parentElement.style.opacity = "1";
-
-    return {
-      accuracy,
-      wpm,
-    };
+    return { accuracy, wpm };
   };
 
-  const handleInput = () => {
-    if (!isStarted) {
+  const handleUserInput = () => {
+    if (!state.isStarted) {
       startTimer();
-      isStarted = true;
+      state.isStarted = true;
+      state.startTime = Date.now();
     }
 
-    const cleanedInput = inputElement.value.replace(/[\t\n\r]/g, "");
-    inputElement.value = cleanedInput;
+    const cleanInput = elements.input.value.replace(/[\t\n\r]/g, "");
+    elements.input.value = cleanInput;
 
-    const inputCharacters = cleanedInput.split("");
-    moveCursor(inputCharacters.length);
+    const inputChars = cleanInput.split("");
+    positionCursor(inputChars.length);
+    updateCharacterStates(inputChars);
 
-    const characterSpans = quoteElement.querySelectorAll(".character");
-    updateCharacterStyles(characterSpans, inputCharacters);
-
-    if (quoteElement.children.length <= inputCharacters.length) {
-      inputElement.disabled = true;
-      showResults(cleanedInput);
-      isStarted = false;
-      return;
+    if (inputChars.length >= state.quote.length) {
+      completeTest(cleanInput);
     }
   };
 
-  const showResults = (inputValue) => {
-    const { accuracy, wpm } = calculateResults(inputValue);
-    accuracyElement.textContent = `${accuracy.toFixed(2)}%`;
-    speedElement.textContent = `${wpm.toFixed(2)} WPM`;
+  const displayResults = ({ accuracy, wpm }) => {
+    elements.accuracy.textContent = `${accuracy.toFixed(2)}%`;
+    elements.speed.textContent = `${wpm.toFixed(2)} WPM`;
+    elements.speedContainer.style.opacity = RESULTS_VISIBLE_OPACITY;
+    elements.accuracyContainer.style.opacity = RESULTS_VISIBLE_OPACITY;
   };
 
   const startTimer = () => {
-    let startTime = Date.now();
-
-    timerInterval = setInterval(() => {
-      if (!isStarted) {
-        clearInterval(timerInterval);
+    state.timerInterval = setInterval(() => {
+      if (!state.isStarted) {
+        clearInterval(state.timerInterval);
         return;
       }
 
-      const elapsedTime = (Date.now() - startTime) / 1000;
-      timerElement.textContent = `${elapsedTime.toFixed(0)}s`;
+      const elapsedSeconds = (Date.now() - state.startTime) / 1000;
+      elements.timer.textContent = `${Math.floor(elapsedSeconds)}s`;
     }, 1000);
   };
 
-  const reset = () => {
-    clearInterval(timerInterval);
-    generateRandomQuote();
-    inputElement.value = "";
-    inputElement.disabled = false;
-    inputElement.focus();
-    accuracyElement.textContent = "";
-    speedElement.textContent = "";
-    timerElement.textContent = "0s";
-    isStarted = false;
-    moveCursor(0);
-    speedElement.parentElement.style.opacity = "0.2";
-    accuracyElement.parentElement.style.opacity = "0.2";
+  const completeTest = (input) => {
+    elements.input.disabled = true;
+    displayResults(calculateMetrics(input));
+    state.isStarted = false;
+  };
+
+  const resetTest = () => {
+    clearInterval(state.timerInterval);
+    displayNewQuote();
+
+    // Reset UI
+    elements.input.value = "";
+    elements.input.disabled = false;
+    elements.input.focus();
+    elements.timer.textContent = "0s";
+    elements.accuracy.textContent = "";
+    elements.speed.textContent = "";
+
+    // Reset state
+    state.isStarted = false;
+    state.startTime = null;
+
+    // Visual reset
+    positionCursor(0);
+    elements.speedContainer.style.opacity = RESULTS_HIDDEN_OPACITY;
+    elements.accuracyContainer.style.opacity = RESULTS_HIDDEN_OPACITY;
+  };
+
+  const adjustInputHeight = () => {
+    elements.input.style.height = elements.quote.offsetHeight + "px";
   };
 
   // Initialize
   const init = () => {
-    inputElement.addEventListener("keydown", handleKeyDown);
-    inputElement.addEventListener("input", handleInput);
-    resetElement.addEventListener("click", reset);
-    generateRandomQuote();
-    inputElement.focus();
-    cursorElement.style.opacity = "0";
-    speedElement.parentElement.style.opacity = "0.2";
-    accuracyElement.parentElement.style.opacity = "0.2";
+    // Event listeners
+    elements.input.addEventListener("keydown", handleSpecialKeys);
+    elements.input.addEventListener("input", handleUserInput);
+    elements.reset.addEventListener("click", resetTest);
+    window.addEventListener("resize", adjustInputHeight);
+
+    // Initial setup
+    displayNewQuote();
+    elements.input.focus();
+    adjustInputHeight();
+    elements.cursor.style.opacity = CURSOR_HIDDEN_OPACITY;
+    elements.speedContainer.style.opacity = RESULTS_HIDDEN_OPACITY;
+    elements.accuracyContainer.style.opacity = RESULTS_HIDDEN_OPACITY;
   };
 
-  return {
-    init,
-  };
+  return { init };
 })();
 
-typingTest.init();
+TypingTest.init();

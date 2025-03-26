@@ -56,9 +56,10 @@ h1 {
 }
 
 .timer {
+  opacity: 0;
   width: 100%;
-  color: #823b00;
   font-size: 1.5rem;
+  color: rgb(116, 116, 116);
 }
 
 .result {

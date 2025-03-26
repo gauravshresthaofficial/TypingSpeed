@@ -29,10 +29,12 @@ body {
 }
 
 h1 {
+  position: absolute;
+  top: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 1.5rem;
-  padding-top: 2rem;
-  padding-left: 2rem;
-  width: 100%;
+  width: fit-content;
 }
 
 .quote-container {

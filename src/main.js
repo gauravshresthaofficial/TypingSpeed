@@ -157,6 +157,7 @@ const TypingTest = (() => {
       startTimer();
       state.isStarted = true;
       state.startTime = Date.now();
+      elements.timer.style.opacity = "1";
     }
 
     const cleanInput = elements.input.value.replace(/[\t\n\r]/g, "");
@@ -211,6 +212,7 @@ const TypingTest = (() => {
     // Reset state
     state.isStarted = false;
     state.startTime = null;
+    elements.timer.style.opacity = "0";
 
     // Visual reset
     positionCursor(0);
@@ -237,6 +239,7 @@ const TypingTest = (() => {
     elements.cursor.style.opacity = CURSOR_HIDDEN_OPACITY;
     elements.speedContainer.style.opacity = RESULTS_HIDDEN_OPACITY;
     elements.accuracyContainer.style.opacity = RESULTS_HIDDEN_OPACITY;
+    elements.timer.style.opacity = "0";
   };
 
   return { init };

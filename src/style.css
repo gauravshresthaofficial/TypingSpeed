@@ -36,7 +36,7 @@ h1 {
 }
 
 .quote {
-  font-size: 1.2rem;
+  font-size: 2rem;
   margin-bottom: 20px;
   color: rgb(116, 116, 116);
 }
@@ -44,7 +44,7 @@ h1 {
 .input {
   outline: none;
   border: none;
-  font-size: 1.2rem;
+  font-size: 2rem;
   position: absolute;
   top: 0;
   left: 0;
